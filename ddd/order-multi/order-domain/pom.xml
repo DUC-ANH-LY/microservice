@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.ddd</groupId>
+        <artifactId>order-multi</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>order-domain</artifactId>
+    <name>DDD Order - Domain</name>
+    <description>
+        Pure domain layer — aggregates, value objects, repository interfaces.
+        Zero framework dependencies. Depends only on order-shared for marker annotations.
+        This module forms the inner-most ring of the hexagonal architecture.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ddd</groupId>
+            <artifactId>order-shared</artifactId>
+        </dependency>
+        <!-- Lombok for boilerplate reduction only — not a framework dependency -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>
