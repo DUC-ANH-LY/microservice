@@ -1,0 +1,39 @@
+server:
+  port: 0  # Random port - this is a client app
+
+spring:
+  application:
+    name: benchmark-client
+  main:
+    web-application-type: none
+
+# Benchmark configuration
+benchmark:
+  # Mode: "benchmark" (normal) or "stress" (crash test)
+  mode: benchmark
+
+  rest:
+    base-url: http://localhost:8081
+  grpc:
+    host: localhost
+    port: 9091
+
+  # ── Normal benchmark settings ──
+  warmup-iterations: 500
+  iterations: 5000
+  concurrent-clients: 10
+  scenarios:
+    - GET_USER
+    - CREATE_USER
+    - LIST_USERS
+    - BULK_CREATE
+
+  # ── Stress / Crash test settings ──
+  stress:
+    start-concurrency: 10       # Start with this many threads
+    max-concurrency: 500        # Ramp up to this maximum
+    concurrency-step: 20        # Increase by this many each round
+    requests-per-round: 2000    # Requests per round
+    timeout-ms: 30000           # Max time per round (30s)
+    error-threshold-percent: 30 # Stop when error rate hits 30%
+    cooldown-ms: 1000           # Pause between rounds (1s)
