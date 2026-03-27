@@ -1,0 +1,30 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: orchestration-orchestrator
+  kafka:
+    # Specifies the Kafka broker addresses to connect to. Uses an environment variable with a default fallback.
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # Sets where a new consumer group reads from: 'earliest' reads from the earliest offset if no offset is present.
+      auto-offset-reset: earliest
+      # Specifies the deserializer class for Kafka message keys (as strings).
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Specifies the deserializer class for Kafka message values (as JSON).
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # Trusts this package for deserializing JSON messages (boosts security).
+        spring.json.trusted.packages: "*"
+        # Uses type headers in Kafka messages to help with correct deserialization.
+        spring.json.use.type.headers: true
+    producer:
+      # Specifies the serializer class for Kafka message keys (as strings).
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Specifies the serializer class for Kafka message values (as JSON).
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # Adds type headers to Kafka messages when serializing (helps consumer deserialization).
+        spring.json.add.type.headers: true
+

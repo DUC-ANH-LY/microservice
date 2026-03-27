@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+demo:
+  topic:
+    name: demo.messages
+  instance:
+    name: consumer-a
+
+spring:
+  application:
+    name: consumer-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: kafka-consumer-group-demo
+      client-id: consumer-a
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+

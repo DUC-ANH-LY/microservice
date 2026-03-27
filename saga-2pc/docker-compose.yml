@@ -1,0 +1,5 @@
+# saga-2pc - minimal compose (no Kafka required for 2PC)
+# All services use H2 file-based storage; run standalone
+# Optional: uncomment if you add audit/event publishing later
+# services:
+#   placeholder:
