@@ -15,7 +15,7 @@ from pathlib import Path
 SRC_DIR = Path(__file__).resolve().parent
 
 ################# Add the topic created
-kafka_topic = 'your-topic-name'
+kafka_topic = 'twitter-topic'
 
 spark = SparkSession \
     .builder \

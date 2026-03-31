@@ -10,23 +10,41 @@ A real-time streaming ETL pipeline for streaming Twitter data using Apache Kafka
 * [Delta Lake](https://docs.delta.io/latest/quick-start.html) package
 
 ## Usage
-After providing Twitter API credentials in twitter_credentials.py and creating kafka topics and updating the topic in tweet_stream_producer.py and tweet_stream_consumer.py, run the twitter stream using 
+This project now uses **X/Twitter API v2** filtered stream via Tweepy `StreamingClient`.
+
+1. Add credentials in `TwitterStreaming/src/app/twitter_credentials.py`:
+   - `bearer_token` (required)
+   - `api_key`, `api_key_secret` (optional for this producer)
+
+2. Ensure topic names match in:
+   - `tweet_stream_producer.py` (`KAFKA_TOPIC`)
+   - `tweet_stream_consumer.py` (`kafka_topic`)
+
+3. Install Python dependencies:
 ```
-python tweet_stream_producer.py
+python3 -m pip install --user tweepy kafka-python
 ```
-and consumer as
+
+4. Run producer:
+```
+python3 tweet_stream_producer.py
+```
+
+5. Run consumer:
 ```
 spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0,io.delta:delta-core_2.12:0.7.0 tweet_stream_consumer.py
 ```
-The packages include dependencies for kafka and delta lake.
+
+The Spark packages include dependencies for Kafka and Delta Lake.
 ## Architecture
 
 ![Architecture](/images/Architecture.png)
 
 ## Extraction
 
-### Twitter API
-Tweets are streamed using Tweepy, a python based library for accessing the Twitter API.
+### X/Twitter API v2
+Tweets are streamed using Tweepy, a Python library for accessing X/Twitter APIs.
+The producer uses the v2 filtered stream endpoint with Bearer token auth.
 http://docs.tweepy.org/en/latest/index.html
 
 ### Apache Kafka

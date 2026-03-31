@@ -1,69 +1,67 @@
-'''
-Streams tweets using tweepy API.
-Initializes kafka producer and ingest the streaming tweets to the topic.
-'''
-import twitter_credentials as tc
-from tweepy import OAuthHandler, StreamListener
-from tweepy import Stream, API
+"""
+Streams tweets using X/Twitter API v2 (Bearer token via Tweepy StreamingClient).
+Initializes Kafka producer and ingests the streaming tweets to a topic.
+"""
+import json
 
+import tweepy
 from kafka import KafkaProducer
 
-import json
-from bson import json_util
-from dateutil.parser import parse
-import re
+import twitter_credentials as tc
 
-class KafkaConfig():
-	def __init__(self):
-		self.producer = KafkaProducer(bootstrap_servers='localhost:9092')
-	def get_producer(self):
-		return self.producer
 
-class TweetStreamListener(StreamListener):
-	def on_data(self, data):
-    	##### Kafka producer initialize
-		kafka_producer = KafkaConfig().get_producer()
-        ##### Add the topic created
-		kafka_topic = 'your-topic-name'
-		##### Filter necessary fields from the json data
-		tweet = json.loads(data)
-		tweet_text = ""
-		print(tweet.keys())
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_TOPIC = "twitter-topic"
+STREAM_RULES = ["Covid19", "coronavirus", "covid"]
 
-		if all(x in tweet.keys() for x in ['lang', 'created_at']) and tweet['lang'] == 'en':
-			if 'retweeted_status' in tweet.keys():
-				if 'quoted_status' in tweet['retweeted_status'].keys():
-					if('extended_tweet' in tweet['retweeted_status']['quoted_status'].keys()):
-						tweet_text = tweet['retweeted_status']['quoted_status']['extended_tweet']['full_text']
-				elif 'extended_tweet' in tweet['retweeted_status'].keys():
-					tweet_text = tweet['retweeted_status']['extended_tweet']['full_text']
-			elif tweet['truncated'] == 'true':
-				tweet_text = tweet['extended_tweet']['full_text']
 
-			else:
-				tweet_text = tweet['text']
+class TweetStreamClient(tweepy.StreamingClient):
+    def __init__(self, bearer_token: str, producer: KafkaProducer):
+        super().__init__(bearer_token=bearer_token, wait_on_rate_limit=True)
+        self.producer = producer
 
-		if(tweet_text):
-			data = {
-				'created_at': tweet['created_at'],
-				 'message': tweet_text.replace(',','')
-				 }
-			kafka_producer.send(kafka_topic, value = json.dumps(data, default=json_util.default).encode('utf-8'))
+    def on_tweet(self, tweet):
+        # tweet_fields includes created_at in filter() call below.
+        if not tweet.text:
+            return
 
-	def on_error(self, status):
-		if(status == 420): 
-			return False # 420 error occurs when rate limit exceeds
-		print(status)
+        payload = {
+            "created_at": str(tweet.created_at) if tweet.created_at else "",
+            "message": tweet.text.replace(",", ""),
+        }
+        self.producer.send(
+            KAFKA_TOPIC, value=json.dumps(payload).encode("utf-8")
+        )
+
+    def on_errors(self, errors):
+        print(f"Stream errors: {errors}")
+
+    def on_connection_error(self):
+        print("Connection error. Disconnecting stream.")
+        self.disconnect()
+
+    def on_exception(self, exception):
+        print(f"Stream exception: {exception}")
+        return False
+
+
+def sync_stream_rules(client: tweepy.StreamingClient, rule_values):
+    existing = client.get_rules()
+    if existing and existing.data:
+        client.delete_rules([rule.id for rule in existing.data])
+
+    rules = [tweepy.StreamRule(value=rule) for rule in rule_values]
+    client.add_rules(rules)
+
 
 if __name__ == "__main__":
-	
-	listener = TweetStreamListener()
+    if tc.bearer_token in ("", "BEARER_TOKEN"):
+        raise ValueError(
+            "Set bearer_token in twitter_credentials.py before running."
+        )
 
-	#API Authentication
-	auth = OAuthHandler(tc.consumer_key, tc.consumer_secret)
-	auth.set_access_token(tc.access_token, tc.access_token_secret)
-	api = API(auth)
+    kafka_producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+    stream_client = TweetStreamClient(tc.bearer_token, kafka_producer)
 
-	stream = Stream(api.auth, listener)
-    ###### Add the tracks to filter the tweets
-	stream.filter(track=["Covid19", "coronavirus", "covid"])
+    sync_stream_rules(stream_client, STREAM_RULES)
+    stream_client.filter(tweet_fields=["created_at", "lang"])
